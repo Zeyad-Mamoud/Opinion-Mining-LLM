@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.python-version
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+# Data and outputs
+data/raw/
+data/processed/
+results/plots/
+results/lora_adapter/
+
+# Model artifacts
+*.bin
+*.safetensors
+*.pt
+*.ckpt
+*.gguf
+
+# OS files
+Thumbs.db
+Desktop.ini
