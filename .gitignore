@@ -15,7 +15,6 @@ notebooks/.ipynb_checkpoints/
 
 # Data and outputs
 data/raw/
-results/plots/
 results/lora_adapter/
 
 # Model artifacts

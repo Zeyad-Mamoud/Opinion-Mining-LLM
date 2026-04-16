@@ -1,0 +1,12 @@
+{
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "num_samples": 20,
+  "json_validity_rate": 0.15,
+  "average_precision": 0.0,
+  "average_recall": 0.0,
+  "f1_score": 0.0,
+  "polarity_accuracy": 0,
+  "matched_aspects": 0,
+  "total_ground_truth_aspects": 3,
+  "total_predicted_aspects": 10
+}
