@@ -14,7 +14,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 
-DEFAULT_BASE_MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
+DEFAULT_BASE_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
 
 
 def _build_quantization_config(load_in_4bit: bool) -> Optional[BitsAndBytesConfig]:
