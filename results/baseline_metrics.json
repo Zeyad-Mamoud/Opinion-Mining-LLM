@@ -7,6 +7,6 @@
   "f1_score": 0.0,
   "polarity_accuracy": 0,
   "matched_aspects": 0,
-  "total_ground_truth_aspects": 3,
+  "total_ground_truth_aspects": 6,
   "total_predicted_aspects": 10
 }
