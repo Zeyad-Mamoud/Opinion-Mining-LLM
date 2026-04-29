@@ -1,80 +1,93 @@
-# Opinion Mining from Customer Reviews
+# Opinion Mining LLM
 
-## 1. Project Idea
-This project addresses the task of opinion mining from customer reviews using a fine-tuned Large Language Model (LLM).
+Aspect-based opinion mining from customer reviews using a base instruction-tuned LLM and a LoRA fine-tuned version of the same model.
 
-The main goal is to extract:
-- Overall sentiment from each review
-- Product features or aspects mentioned in the review
-- Opinion phrases linked to those features
+The project extracts structured information from reviews:
 
-The model is expected to produce structured and reliable outputs, preferably in JSON format, so the results can be evaluated, visualized, and demonstrated clearly.
+- Overall review sentiment
+- Product or service aspects mentioned in the review
+- Sentiment polarity for each aspect
+- Opinion phrases that explain each sentiment
 
-## 2. Dataset Information
-The dataset will be stored inside `data/` and can include customer reviews from sources such as Amazon or Yelp.
+The target output is valid JSON so predictions can be evaluated, visualized, and used in a simple demo app.
 
-Suggested dataset organization:
-- `data/raw/`: original review files before cleaning
-- `data/processed/`: cleaned and formatted data for training, validation, and testing
+## Project Overview
 
-Planned preprocessing steps:
-- Remove duplicated or noisy rows
-- Normalize review text
-- Convert annotations into instruction-style examples
-- Prepare train, validation, and test splits
+This repository follows a complete opinion mining workflow:
 
-## 3. Base Model Information
-The project will start from one selected pre-trained base LLM, such as:
-- `meta-llama/Llama-3-8B-Instruct`
-- `mistralai/Mistral-7B-Instruct-v0.3`
+1. Label and prepare review data for instruction tuning.
+2. Evaluate the base LLM before fine-tuning.
+3. Fine-tune the same base model with LoRA.
+4. Compare base and fine-tuned predictions.
+5. Present the extraction task through a Streamlit demo.
 
-Important course rule:
-- The same base model chosen at the beginning must also be the one fine-tuned with LoRA
-- Evaluation and comparison must be performed between the original base model and its LoRA-tuned version only
+The current base model configured in the code is:
 
-The loading logic belongs in `src/model_loader.py`.
+```text
+Qwen/Qwen2.5-1.5B-Instruct
+```
 
-## 4. Brief Explanation of Fine-Tuning with LoRA
-LoRA, or Low-Rank Adaptation, is a parameter-efficient fine-tuning method that updates a small number of trainable matrices instead of updating the entire LLM.
+The model loading logic is implemented in `src/model_loader.py`, and the prompt-generation and JSON-parsing helpers are implemented in `src/inference.py`.
 
-Why LoRA fits this project:
-- Reduces memory usage during training
-- Makes fine-tuning possible on limited hardware
-- Preserves the original base model while learning task-specific behavior
+## Repository Structure
 
-For this project, LoRA will be applied so the model becomes better at extracting sentiment, aspects, and opinion expressions from review text in a structured format.
+```text
+.
+|-- app/
+|   `-- main.py                         # Streamlit demo scaffold
+|-- data/
+|   |-- README.md                       # Dataset card and citation
+|   |-- train-00000-of-00001.parquet
+|   |-- dev-00000-of-00001.parquet
+|   |-- test-00000-of-00001.parquet
+|   |-- Labeled-data/                   # LLM-assisted labeled splits
+|   |-- LLM responses for evaluation/   # Saved model responses
+|   `-- processed/                      # Cleaned and instruction-format data
+|-- notebooks/
+|   |-- 00_baseline_evaluation.ipynb
+|   |-- 01_Data_Labeling_using_LLM.ipynb
+|   |-- 01_data_preprocessing.ipynb
+|   |-- 02_lora_finetuning.ipynb
+|   `-- 03_evaluation_results.ipynb
+|-- results/
+|   |-- baseline_evaluation.csv
+|   |-- baseline_metrics.json
+|   `-- plots/
+|       `-- baseline_evaluation_plots.png
+|-- src/
+|   |-- inference.py                    # Prompting, generation, JSON parsing
+|   |-- model_loader.py                 # Base model and LoRA adapter loading
+|   `-- utils.py                        # Shared schema and validation helpers
+|-- requirements.txt
+`-- README.md
+```
 
-The fine-tuning workflow belongs in `notebooks/02_lora_finetuning.ipynb`.
+## Dataset
 
-## 5. Evaluation Methods
-The model should be evaluated before and after fine-tuning.
+The project uses an aspect-based sentiment analysis dataset based on SemEval 2014 Task 4.
 
-Possible evaluation methods:
-- Exact match or JSON structure validity
-- Precision, recall, and F1-score for extracted sentiments and product features
-- Manual qualitative comparison on sample reviews
-- Error analysis for missing, incorrect, or hallucinated fields
+The included dataset contains review examples in Alpaca-style instruction format with these main fields:
 
-The main comparison is:
-- Base model performance
-- LoRA fine-tuned model performance
+- `instruction`
+- `input`
+- `output`
+- `split`
+- `domain`
+- `sentence_id`
 
-The evaluation workflow belongs in `notebooks/03_evaluation_results.ipynb`.
+Dataset splits:
 
-## 6. Project Results and Plots
-Project outputs should include quantitative and qualitative comparisons between the base model and the LoRA-tuned model.
+| Split | Examples |
+| --- | ---: |
+| Train | 5,959 |
+| Dev | 200 |
+| Test | 1,572 |
 
-Examples of artifacts to save in `results/plots/`:
-- Bar charts for precision, recall, and F1-score
-- Comparison plots for base vs. tuned model
-- Samples of correctly and incorrectly extracted opinions
+Examples containing the `conflict` polarity were excluded, as noted in `data/README.md`.
 
-These results should support the presentation and help explain the practical value of fine-tuning.
+## Output Format
 
-## 7. Structured Output
-The final system should produce task-specific structured outputs instead of free-form text.
-
-Example JSON format:
+The system is designed to return JSON in the following structure:
 
 ```json
 {
@@ -95,8 +108,117 @@ Example JSON format:
 }
 ```
 
-This structured output will be generated by `src/inference.py` and can be showcased live through `app/main.py`.
+This format makes model outputs easier to validate, compare, and visualize.
 
-## Team Workflow (GitHub)
-- Use Issues to track tasks for data, fine-tuning, evaluation, and demo work.
-- Push all updates through branches and open Pull Requests for review.
+## Setup
+
+Create and activate a virtual environment:
+
+```bash
+python -m venv .venv
+```
+
+On Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+On Linux or macOS:
+
+```bash
+source .venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+If you plan to load quantized models with `bitsandbytes`, use a compatible CUDA-enabled environment.
+
+## Running the Demo
+
+Start the Streamlit app:
+
+```bash
+streamlit run app/main.py
+```
+
+The current app shows the review input flow and expected structured output. It is prepared to be connected to `src/model_loader.py` and `src/inference.py` for real model predictions.
+
+## Notebook Workflow
+
+Run the notebooks in this order:
+
+| Notebook | Purpose |
+| --- | --- |
+| `00_baseline_evaluation.ipynb` | Evaluate the original base model before fine-tuning |
+| `01_Data_Labeling_using_LLM.ipynb` | Generate or refine labels using an LLM-assisted workflow |
+| `01_data_preprocessing.ipynb` | Clean data and convert it into instruction format |
+| `02_lora_finetuning.ipynb` | Fine-tune the selected base model using LoRA |
+| `03_evaluation_results.ipynb` | Compare model predictions and visualize results |
+
+## Baseline Results
+
+The saved baseline run in `results/baseline_metrics.json` evaluates `Qwen/Qwen2.5-1.5B-Instruct` on 20 samples:
+
+| Metric | Value |
+| --- | ---: |
+| JSON validity rate | 0.15 |
+| Average precision | 0.00 |
+| Average recall | 0.00 |
+| F1 score | 0.00 |
+| Polarity accuracy | 0.00 |
+| Matched aspects | 0 |
+| Ground-truth aspects | 6 |
+| Predicted aspects | 10 |
+
+These baseline results provide the comparison point for the LoRA fine-tuned model.
+
+## Core Modules
+
+`src/model_loader.py`
+
+- Defines the default base model.
+- Loads the tokenizer.
+- Loads either the original model or the same model with a LoRA adapter.
+- Supports optional 4-bit quantization.
+
+`src/inference.py`
+
+- Builds the opinion mining prompt.
+- Generates model output.
+- Extracts and parses the JSON response.
+
+`src/utils.py`
+
+- Provides a reference output schema.
+- Validates prediction structure.
+- Saves JSON outputs.
+
+## Project Goal
+
+The main experimental question is whether LoRA fine-tuning improves structured aspect-based sentiment extraction compared with the original base model.
+
+The comparison should use the same base model in both cases:
+
+- Base model: `Qwen/Qwen2.5-1.5B-Instruct`
+- Fine-tuned model: `Qwen/Qwen2.5-1.5B-Instruct` plus the trained LoRA adapter
+
+## Citation
+
+The dataset is based on SemEval 2014 Task 4:
+
+```bibtex
+@inproceedings{pontiki_semeval-2014_2014,
+  title = {{SemEval}-2014 {Task} 4: {Aspect} {Based} {Sentiment} {Analysis}},
+  doi = {10.3115/v1/S14-2004},
+  booktitle = {Proceedings of the 8th {International} {Workshop} on {Semantic} {Evaluation} ({SemEval} 2014)},
+  publisher = {Association for Computational Linguistics},
+  author = {Pontiki, Maria and Galanis, Dimitris and Pavlopoulos, John and Papageorgiou, Harris and Androutsopoulos, Ion and Manandhar, Suresh},
+  year = {2014},
+  pages = {27--35}
+}
+```
