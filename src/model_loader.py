@@ -22,6 +22,9 @@ def _build_quantization_config(load_in_4bit: bool) -> Optional[BitsAndBytesConfi
     if not load_in_4bit:
         return None
 
+    if not torch.cuda.is_available():
+        return None
+
     return BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
