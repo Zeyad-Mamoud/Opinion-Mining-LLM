@@ -13,30 +13,40 @@ from typing import Any, Dict
 import torch
 
 
-SYSTEM_INSTRUCTION = "\n".join(
-    [
-        "You extract structured information from text and return only valid JSON.",
-        "",
-        "No explanation No introduction No conclusion",
-    ]
-)
+# SYSTEM_INSTRUCTION = "\n".join(
+#     [
+#         "You extract structured information from text and return only valid JSON.",
+#         "",
+#         "No explanation No introduction No conclusion",
+#     ]
+# )
 
 
 def build_review_prompt(review_text: str) -> str:
-    """Create a task prompt that asks the model for structured JSON output."""
-    return "\n".join(
-        [
-            SYSTEM_INSTRUCTION,
-            "Extract the domain and all aspect terms with their sentiment polarity.",
-            "- Domains: electronics, restaurants, movies, books, software, general",
-            "- Polarity: positive, negative, neutral",
-            "- Extract ALL aspects mentioned in the text",
-            "input :",
-            review_text,
-            "output format:",
-            '{"domain":"...","aspects":[{"term":"...","polarity":"..."}, ...]}',
-        ]
-    )
+    """Create prompt for structured ABSA extraction."""
+
+    return "\n".join([
+        "You extract structured sentiment information.",
+        "Return ONLY valid JSON.",
+        "",
+        "Required JSON format:",
+        """
+{
+  "review": "...",
+  "overall_sentiment": "positive|negative|neutral|mixed",
+  "aspects": [
+    {
+      "feature": "...",
+      "sentiment": "positive|negative|neutral",
+      "opinion": "..."
+    }
+  ]
+}
+        """,
+        "",
+        "Review:",
+        review_text,
+    ])
 
 
 def extract_json_block(text: str) -> str:
