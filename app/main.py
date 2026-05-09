@@ -76,7 +76,7 @@ if st.button("Run Live Comparison"):
             base_model,
             base_tokenizer,
             review,
-            max_new_tokens=256,
+            max_new_tokens=65,
         )
 
     with st.spinner("Running LoRA model..."):
