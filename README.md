@@ -1,40 +1,44 @@
-# Opinion Mining LLM
+# Opinion Mining with Fine-Tuned LLMs
 
 Aspect-based opinion mining from customer reviews using a base instruction-tuned LLM and a LoRA fine-tuned version of the same model.
 
-The project extracts structured information from reviews:
+The system extracts structured information from a review:
 
 - Overall review sentiment
 - Product or service aspects mentioned in the review
 - Sentiment polarity for each aspect
 - Opinion phrases that explain each sentiment
 
-The target output is valid JSON so predictions can be evaluated, visualized, and used in a simple demo app.
+Predictions are returned as valid JSON so they can be evaluated, visualized, and compared in the Streamlit demo.
 
 ## Project Overview
 
-This repository follows a complete opinion mining workflow:
+This repository implements an end-to-end opinion mining workflow:
 
-1. Label and prepare review data for instruction tuning.
-2. Evaluate the base LLM before fine-tuning.
+1. Prepare SemEval-style review data for instruction tuning.
+2. Evaluate the original base LLM before fine-tuning.
 3. Fine-tune the same base model with LoRA.
-4. Compare base and fine-tuned predictions.
-5. Present the extraction task through a Streamlit demo.
+4. Compare base and fine-tuned model predictions.
+5. Run a Streamlit app for live base-vs-LoRA inference.
 
-The current base model configured in the code is:
+The configured base model is:
 
 ```text
 Qwen/Qwen2.5-1.5B-Instruct
 ```
 
-The model loading logic is implemented in `src/model_loader.py`, and the prompt-generation and JSON-parsing helpers are implemented in `src/inference.py`.
+The fine-tuned model uses the same base model plus the local LoRA adapter saved in:
+
+```text
+lora_model/
+```
 
 ## Repository Structure
 
 ```text
 .
 |-- app/
-|   `-- main.py                         # Streamlit demo scaffold
+|   `-- main.py                         # Streamlit live comparison app
 |-- data/
 |   |-- README.md                       # Dataset card and citation
 |   |-- train-00000-of-00001.parquet
@@ -43,6 +47,11 @@ The model loading logic is implemented in `src/model_loader.py`, and the prompt-
 |   |-- Labeled-data/                   # LLM-assisted labeled splits
 |   |-- LLM responses for evaluation/   # Saved model responses
 |   `-- processed/                      # Cleaned and instruction-format data
+|-- lora_model/
+|   |-- adapter_config.json
+|   |-- adapter_model.safetensors
+|   |-- tokenizer.json
+|   `-- tokenizer_config.json
 |-- notebooks/
 |   |-- 00_baseline_evaluation.ipynb
 |   |-- 01_Data_Labeling_using_LLM.ipynb
@@ -51,9 +60,6 @@ The model loading logic is implemented in `src/model_loader.py`, and the prompt-
 |   `-- 03_evaluation_results.ipynb
 |-- results/
 |   |-- baseline_evaluation.csv
-|   |-- baseline_metrics.json
-|   `-- plots/
-|       `-- baseline_evaluation_plots.png
 |-- src/
 |   |-- inference.py                    # Prompting, generation, JSON parsing
 |   |-- model_loader.py                 # Base model and LoRA adapter loading
@@ -64,9 +70,9 @@ The model loading logic is implemented in `src/model_loader.py`, and the prompt-
 
 ## Dataset
 
-The project uses an aspect-based sentiment analysis dataset based on SemEval 2014 Task 4.
+The project uses an aspect-based sentiment analysis dataset based on SemEval 2014 Task 4. Examples with one or more `conflict` polarity labels were excluded.
 
-The included dataset contains review examples in Alpaca-style instruction format with these main fields:
+The included data is stored in Alpaca-style instruction format with these fields:
 
 - `instruction`
 - `input`
@@ -83,11 +89,11 @@ Dataset splits:
 | Dev | 200 |
 | Test | 1,572 |
 
-Examples containing the `conflict` polarity were excluded, as noted in `data/README.md`.
+See `data/README.md` for the dataset card and citation.
 
 ## Output Format
 
-The system is designed to return JSON in the following structure:
+The target model output is JSON:
 
 ```json
 {
@@ -108,23 +114,23 @@ The system is designed to return JSON in the following structure:
 }
 ```
 
-This format makes model outputs easier to validate, compare, and visualize.
+Valid structured output makes it easier to score JSON validity, aspect matching, polarity accuracy, precision, recall, and F1.
 
 ## Setup
 
-Create and activate a virtual environment:
+Create a virtual environment:
 
 ```bash
 python -m venv .venv
 ```
 
-On Windows PowerShell:
+Activate it on Windows PowerShell:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
 ```
 
-On Linux or macOS:
+Or activate it on Linux/macOS:
 
 ```bash
 source .venv/bin/activate
@@ -136,17 +142,24 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-If you plan to load quantized models with `bitsandbytes`, use a compatible CUDA-enabled environment.
+Model loading uses Hugging Face Transformers and PEFT. A CUDA-enabled environment is recommended for running the Streamlit comparison because it loads both the base model and the LoRA-adapted model.
 
-## Running the Demo
+## Running the Streamlit Demo
 
-Start the Streamlit app:
+Start the app from the repository root:
 
 ```bash
 streamlit run app/main.py
 ```
 
-The current app shows the review input flow and expected structured output. It is prepared to be connected to `src/model_loader.py` and `src/inference.py` for real model predictions.
+The app:
+
+- Accepts a customer review.
+- Runs the base `Qwen/Qwen2.5-1.5B-Instruct` model.
+- Runs the same base model with the `lora_model/` adapter.
+- Displays both JSON outputs and aspect tables side by side.
+
+If the model files are not already cached locally, the first run may download the base model from Hugging Face.
 
 ## Notebook Workflow
 
@@ -162,20 +175,20 @@ Run the notebooks in this order:
 
 ## Baseline Results
 
-The saved baseline run in `results/baseline_metrics.json` evaluates `Qwen/Qwen2.5-1.5B-Instruct` on 20 samples:
+The saved baseline run in `results/baseline_evaluation.csv` evaluates `Qwen/Qwen2.5-1.5B-Instruct` on 20 samples:
 
 | Metric | Value |
 | --- | ---: |
-| JSON validity rate | 0.15 |
-| Average precision | 0.00 |
-| Average recall | 0.00 |
-| F1 score | 0.00 |
-| Polarity accuracy | 0.00 |
-| Matched aspects | 0 |
-| Ground-truth aspects | 6 |
-| Predicted aspects | 10 |
+| JSON validity rate | 1.00 |
+| Average precision | 0.75 |
+| Average recall | 0.75 |
+| F1 score | 0.75 |
+| Polarity accuracy | 1.00 |
+| Matched aspects | 15 |
+| Ground-truth aspects | 20 |
+| Predicted aspects | 20 |
 
-These baseline results provide the comparison point for the LoRA fine-tuned model.
+These results are the baseline comparison point for the LoRA fine-tuned model.
 
 ## Core Modules
 
@@ -184,7 +197,6 @@ These baseline results provide the comparison point for the LoRA fine-tuned mode
 - Defines the default base model.
 - Loads the tokenizer.
 - Loads either the original model or the same model with a LoRA adapter.
-- Supports optional 4-bit quantization.
 
 `src/inference.py`
 
@@ -202,10 +214,10 @@ These baseline results provide the comparison point for the LoRA fine-tuned mode
 
 The main experimental question is whether LoRA fine-tuning improves structured aspect-based sentiment extraction compared with the original base model.
 
-The comparison should use the same base model in both cases:
+The comparison keeps the base model fixed:
 
 - Base model: `Qwen/Qwen2.5-1.5B-Instruct`
-- Fine-tuned model: `Qwen/Qwen2.5-1.5B-Instruct` plus the trained LoRA adapter
+- Fine-tuned model: `Qwen/Qwen2.5-1.5B-Instruct` plus the trained LoRA adapter in `lora_model/`
 
 ## Citation
 
