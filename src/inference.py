@@ -13,64 +13,48 @@ from typing import Any, Dict
 import torch
 
 
-# SYSTEM_INSTRUCTION = "\n".join(
-#     [
-#         "You extract structured information from text and return only valid JSON.",
-#         "",
-#         "No explanation No introduction No conclusion",
-#     ]
-# )
-
-
-def build_review_prompt(review_text: str) -> str:
-    """Create prompt for structured ABSA extraction."""
+def build_review_prompt(text: str) -> str:
+    """Create prompt for domain and aspect-based sentiment extraction."""
 
     return "\n".join([
-        "You extract structured sentiment information.",
-        "Return ONLY valid JSON.",
+        "You extract structured information from text and return only valid JSON.",
         "",
-        "Required JSON format:",
-        """
-{
-  "review": "...",
-  "overall_sentiment": "positive|negative|neutral|mixed",
-  "aspects": [
-    {
-      "feature": "...",
-      "sentiment": "positive|negative|neutral",
-      "opinion": "..."
-    }
-  ]
-}
-        """,
+        "No explanation No introduction No conclusion",
         "",
-        "Review:",
-        review_text,
+        "Extract the domain and all aspect terms with their sentiment polarity.",
+        "- Domains: electronics, restaurants, movies, books, software, general",
+        "- Polarity: positive, negative, neutral",
+        "- Extract ALL aspects mentioned in the text",
+        "",
+        "input :",
+        text,
+        "",
+        "output format:",
+        '{"domain":"...","aspects":[{"term":"...","polarity":"..."}, ...]}'
     ])
-
 
 def extract_json_block(text: str) -> str:
     """Extract the last valid JSON object from a model response."""
-    cleaned = text.strip()
-    if cleaned.startswith("```"):
-        cleaned = cleaned.removeprefix("```json").removeprefix("```").strip()
-    if cleaned.endswith("```"):
-        cleaned = cleaned.removesuffix("```").strip()
+    # cleaned = text.strip()
+    # if cleaned.startswith("```"):
+    #     cleaned = cleaned.removeprefix("```json").removeprefix("```").strip()
+    # if cleaned.endswith("```"):
+    #     cleaned = cleaned.removesuffix("```").strip()
 
     decoder = json.JSONDecoder()
     candidates: list[tuple[dict[str, Any], str]] = []
 
-    for index, char in enumerate(cleaned):
+    for index, char in enumerate(text):
         if char != "{":
             continue
 
         try:
-            parsed, end = decoder.raw_decode(cleaned[index:])
+            parsed, end = decoder.raw_decode(text[index:])
         except json.JSONDecodeError:
             continue
 
         if isinstance(parsed, dict):
-            candidates.append((parsed, cleaned[index : index + end]))
+            candidates.append((parsed, text[index : index + end]))
 
     if not candidates:
         raise ValueError("No JSON object found in model output.")
